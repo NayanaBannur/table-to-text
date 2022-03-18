@@ -6,8 +6,10 @@ import time
 from typing import List
 from pathlib import Path
 from collections import defaultdict
-
+import gc
+gc.collect()
 import torch
+torch.cuda.empty_cache()
 from torch.utils.data import DataLoader
 import sys
 from lightning_base import BaseTransformer, add_generic_args, generic_train, get_linear_schedule_with_warmup
@@ -31,6 +33,7 @@ class SummarizationTrainer(BaseTransformer):
         self.metrics_save_path = Path(self.hparams.output_dir) / "metrics.json"
         self.hparams_save_path = Path(self.hparams.output_dir) / "hparams.pkl"
         self.step_count = 0
+        self.test_type = self.hparams.test_type
         self.metrics = defaultdict(list)
 
         self.dataset_kwargs: dict = dict(
@@ -123,12 +126,20 @@ class SummarizationTrainer(BaseTransformer):
 
     # def test_end(self, outputs):
     #     return self.validation_end(outputs)
+    
+    def train_epoch_end(self, outputs, prefix='train'):
+        avg_loss = torch.stack([x["train_loss"] for x in outputs]).mean()
+        output_train_info_file = os.path.join(self.hparams.output_dir, "train_info_" +
+            str(self.count_valid_epoch) + ".txt")
+        with open(output_train_info_file, "w") as writer:
+            writer.write(str(avg_loss) + "\n")
+            writer.close()
 
     def test_epoch_end(self, outputs):
         if "preds" in outputs[0]:
-            output_test_predictions_file = os.path.join(self.hparams.output_dir, "test_predictions_" +
+            output_test_predictions_file = os.path.join(self.hparams.output_dir, "test_predictions_" + self.hparams.test_type + "_" +
                                                         str(self.count_valid_epoch) + ".txt")
-            output_test_targets_file = os.path.join(self.hparams.output_dir, "test_targets_" +
+            output_test_targets_file = os.path.join(self.hparams.output_dir, "test_targets_" + self.hparams.test_type + "_" +
                                                         str(self.count_valid_epoch) + ".txt")
             # write predictions and targets for later rouge evaluation.
             with open(output_test_predictions_file, "w") as p_writer, open(output_test_targets_file, "w") as t_writer:
@@ -147,6 +158,12 @@ class SummarizationTrainer(BaseTransformer):
             logger.info("valid epoch: %s", self.count_valid_epoch)
             logger.info("%s bleu_info: %s", self.count_valid_epoch, bleu_info)
             logger.info("%s mover score: %s", self.count_valid_epoch, moverScore)
+
+            output_test_metrics_file = os.path.join(self.hparams.output_dir, "test_metrics_" + self.hparams.test_type + "_" +
+                                                                            str(self.count_valid_epoch) + ".txt")
+            with open(output_test_metrics_file, "w") as writer:
+                writer.write(str(bleu_info) + "\n" + str(moverScore) + "\n")
+                writer.close()
 
             self.count_valid_epoch += 1
 
@@ -175,6 +192,11 @@ class SummarizationTrainer(BaseTransformer):
             if self.count_valid_epoch >= 0:
                 bleu_info = eval_sacre_bleu(output_test_targets_file, output_test_predictions_file)
                 moverScore = eval_mover_score(output_test_targets_file, output_test_predictions_file)
+                output_val_metrics_file = os.path.join(self.hparams.output_dir, "validation_metrics_" +
+                    str(self.count_valid_epoch) + ".txt")
+                with open(output_val_metrics_file, "w") as writer:
+                    writer.write(str(bleu_info) + "\n" + str(moverScore) + "\n")
+                    writer.close()
             else:
                 bleu_info = 0
                 moverScore = [0, 0]
@@ -201,6 +223,13 @@ class SummarizationTrainer(BaseTransformer):
             logger.info('not in')
             avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
         #tensorboard_logs = {"val_loss": avg_loss}
+        
+        output_val_info_file = os.path.join(self.hparams.output_dir, "validation_info_" +
+                                    str(self.count_valid_epoch-1) + ".txt")
+        with open(output_val_info_file, "w") as writer:
+            writer.write(str(avg_loss) + "\n")
+            writer.write(str(mover_tensor) + "\n")
+            writer.close()        
 
         return {"avg_val_loss": avg_loss, "log": metrics, "{}_mover".format(prefix): mover_tensor}
         #return self.check_validation_end(outputs)
@@ -213,7 +242,7 @@ class SummarizationTrainer(BaseTransformer):
         dataset = AgendaDataset(self.tokenizer, type_path=type_path, **self.dataset_kwargs)
         logger.info('loading %s dataloader...', type_path)
         dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=dataset.collate_fn, shuffle=shuffle,
-                                num_workers=20)
+                                num_workers=4)
         logger.info('done')
         return dataloader
 
@@ -234,7 +263,7 @@ class SummarizationTrainer(BaseTransformer):
         return self.get_dataloader("dev", batch_size=self.hparams.eval_batch_size)
 
     def test_dataloader(self) -> DataLoader:
-        return self.get_dataloader("test", batch_size=self.hparams.test_batch_size)
+        return self.get_dataloader(f"test_{self.hparams.test_type}", batch_size=self.hparams.test_batch_size)
 
     @staticmethod
     def add_model_specific_args(parser, root_dir):
@@ -289,7 +318,7 @@ def main(args):
 
     # If output_dir not provided, a folder will be generated in pwd
     if not args.output_dir:
-        args.output_dir = os.path.join("./results", f"{args.task}_{time.strftime('%Y%m%d_%H%M%S')}",)
+        args.output_dir = os.path.join("./results", f"{time.strftime('%Y%m%d_%H%M%S')}",)
         os.makedirs(args.output_dir)
     model = SummarizationTrainer(args)
     if args.checkpoint_model:
