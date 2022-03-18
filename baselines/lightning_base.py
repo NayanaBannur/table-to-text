@@ -188,6 +188,27 @@ class BaseTransformer(pl.LightningModule):
 
 
 class LoggingCallback(pl.Callback):
+    def on_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        logger.info("***** Results *****")
+        if pl_module.is_logger():
+            metrics = trainer.callback_metrics
+            
+            # Log results
+            epoch = metrics['epoch']
+            output_test_results_file = os.path.join(pl_module.hparams.output_dir, f"info_{epoch}.txt")
+            with open(output_test_results_file, "w") as writer:
+                for key in sorted(metrics):
+                    if key not in ["log", "progress_bar"]:
+                        val = metrics[key]
+                        if isinstance(val, torch.Tensor):
+                            val = val.cpu().detach().numpy()
+                        else:
+                            val = str(val)
+                        writer.write("{} = {}".format(key, val))
+                        writer.write('\n')
+                        logger.info("{} = {}".format(key, str(metrics[key])))
+            writer.close()
+
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         logger.info("***** Validation results *****")
         if pl_module.is_logger():
@@ -216,8 +237,16 @@ def add_generic_args(parser, root_dir):
         "--output_dir",
         default=None,
         type=str,
-        required=True,
+        required=False,
         help="The output directory where the model predictions and checkpoints will be written.",
+    )
+
+    parser.add_argument(
+        "--test_type",
+        default=None,
+        type=str,
+        required=True,
+        help="The test file.",
     )
 
     parser.add_argument(
