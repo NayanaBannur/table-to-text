@@ -33,7 +33,7 @@ if __name__ == '__main__':
     refs = get_lines(args.sys)
     preds = get_lines(args.pred)
 
-    print('Meteor score :', compute_meteor(preds, refs))
+    # print('Meteor score :', compute_meteor(preds, refs))
     cmd = 'bert-score -r '+args.sys +' -c ' + args.pred + ' --lang en'
     os.system(cmd)
 
