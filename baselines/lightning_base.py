@@ -64,7 +64,7 @@ class BaseTransformer(pl.LightningModule):
             self.hparams.tokenizer_name if self.hparams.tokenizer_name else self.hparams.model_name_or_path,
             cache_dir=cache_dir,
         )
-        new_tokens = ['[R]', '[C]', '[CAP]']
+        new_tokens = ['[R]', '[C]', '[T]', '[CAP]']
         num_added_toks = self.tokenizer.add_tokens(new_tokens)
         self.model = MODEL_MODES[mode].from_pretrained(
             self.hparams.model_name_or_path,

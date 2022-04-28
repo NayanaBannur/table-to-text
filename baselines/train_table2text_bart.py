@@ -25,7 +25,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
 class SummarizationTrainer(BaseTransformer):
 
     mode = "language-modeling"
-    val_metric = "mover"
+    val_metric = "avg_bleu"
 
     def __init__(self, hparams):
         super().__init__(hparams, num_labels=None, mode=self.mode)
@@ -77,7 +77,7 @@ class SummarizationTrainer(BaseTransformer):
             input_ids=source_ids,
             attention_mask=source_mask,
             num_beams=5,
-            max_length=512,
+            max_length=10,
             length_penalty=5.0,
             early_stopping=True,
             use_cache=True,
@@ -110,7 +110,7 @@ class SummarizationTrainer(BaseTransformer):
             input_ids=source_ids,
             attention_mask=source_mask,
             num_beams=5,
-            max_length=512,
+            max_length=10,
             length_penalty=5.0,
             early_stopping=True,
             use_cache=True,
