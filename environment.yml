@@ -74,7 +74,7 @@ dependencies:
     - tensorboard-data-server==0.6.1
     - tensorboard-plugin-wit==1.8.1
     - tokenizers==0.7.0
-    - torch==1.5.1
+    - torch==1.10.2
     - tqdm==4.63.0
     - transformers==2.10.0
     - typing==3.7.4.3
