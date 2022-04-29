@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 import json
 import os
+import numpy as np
 
 
 if __name__ == '__main__':
@@ -25,6 +26,8 @@ if __name__ == '__main__':
     cell_separator = '<C>'
     caption_separator = '<CAP>'
     table_separator = '<T>'
+    
+    source_lens = []
 
     with open(file, 'r', encoding='utf-8') as f:
         with open('{}.source'.format(out), 'w', encoding='utf-8') as source:
@@ -76,13 +79,15 @@ if __name__ == '__main__':
                     if args.remove_tags:
                         for tag in ['[BOLD]', '[EMPTY]', '[CONTINUE]', '[ITALIC]', '<bold>', '</bold>', '<italic>', '</italic>']:
                             text = text.replace(tag, '')
+                    
+                    source_lens.append(len(text.split(' ')))
 
                     source.write(text)
                     
                     descp = data[d]['text'].replace('[CONTINUE]', '') + '\n'
                     target.write(descp)
 
-
-
-
-
+    
+    # print(max(source_lens))
+    # print(min(source_lens))
+    # print(np.mean(source_lens))
