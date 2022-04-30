@@ -2,11 +2,13 @@ import numpy as np
 import json
 import copy
 
-train_size_per_rule = [400, 400, 400, 2000]
-dev_size_per_rule = [20, 20, 20, 100]
+train_size_per_rule = [1000, 1000, 1000, 2000]
+dev_size_per_rule = [50, 50, 50, 100]
+test_size_per_rule = [50, 50, 50, 100]
 
 train_papers = {}
 dev_papers = {}
+test_papers = {}
 
 num_cols_min = 3
 num_cols_max = 5
@@ -18,6 +20,7 @@ max_num = 100
 
 train_count = 0
 dev_count = 0
+test_count = 0
 
 rules = ['largest', 'smallest', 'similar', 'diff']
 
@@ -233,9 +236,20 @@ for i, rule in enumerate(rules):
         dev_papers[dev_count] = create_datum(rule, dim)
         dev_count += 1
 
+    for j in range(test_size_per_rule[i]):
+        dim = "col"
+        if j < test_size_per_rule[i] / 2:
+            dim = "row"
+
+        test_papers[dev_count] = create_datum(rule, dim)
+        test_count += 1
+
 
 with open('../dataset/pretrain/train.json', 'w') as fp:
     json.dump(train_papers, fp, indent=4)
 
 with open('../dataset/pretrain/dev.json', 'w') as fp:
     json.dump(dev_papers, fp, indent=4)
+
+with open('../dataset/pretrain/test.json', 'w') as fp:
+    json.dump(test_papers, fp, indent=4)
