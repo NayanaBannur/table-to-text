@@ -27,6 +27,8 @@ def get_checkpoint_callback(output_dir, metric):
         exp = "{val_mover_median:.4f}-{step_count}"
     elif metric == "avg_bleu":
         exp = "{val_avg_bleu:.3f}-{step_count}"
+    if metric == "avg_acc":
+        exp = "{val_avg_acc:.3f}-{step_count}"
     else:
         raise NotImplementedError(
             f"seq2seq callbacks only support rouge2 and bleu, got {metric}, You can make your own by adding to this function."
