@@ -2,7 +2,7 @@ python train_table2text_bart.py \
 --data_dir=./ \
 --model_name_or_path=bart-large \
 --learning_rate=3e-5 \
---num_train_epochs 30 \
+--num_train_epochs 100 \
 --train_batch_size=2 \
 --eval_batch_size=2 \
 --test_batch_size=2 \
