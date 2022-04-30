@@ -6,30 +6,47 @@ import sys
 import json
 from tqdm import tqdm
 import re
+import argparse
+import os
 
 plt.rcParams['figure.figsize'] = [100, 60]
 
 from adjustText import adjust_text
 
-from transformers import BartTokenizer, BartForConditionalGeneration
+from transformers import BartTokenizer, BartForConditionalGeneration, BartConfig
 
 import logging
 logging.basicConfig(level=logging.INFO)
 
-model_path = 'facebook/bart-large'
+from lightning_base import add_generic_args
+from train_table2text_bart import SummarizationTrainer, add_generic_args
+
+parser = argparse.ArgumentParser()
+add_generic_args(parser, os.getcwd())
+parser = SummarizationTrainer.add_model_specific_args(parser, os.getcwd())
+args = parser.parse_args()
+
+checkpoint_path = './results/20220430_194642/val_avg_bleu=50.418-step_count=17.ckpt'
+
+model = SummarizationTrainer(args)
+model = model.load_from_checkpoint(checkpoint_path)
+model.hparams = args
+
+tag = 'pretrained'
+tag = 'trained'
 
 # Load BART.
-model = BartForConditionalGeneration.from_pretrained(model_path)
+
 # Set the model to eval mode.
 model.eval()
 # This notebook assumes CPU execution. If you want to use GPUs, put the model on cuda and modify subsequent code blocks.
 #model.to('cuda')
 # Load tokenizer.
-tokenizer = BartTokenizer.from_pretrained(model_path)
+tokenizer = model.tokenizer()
 
-# tokenizer.save_vocabulary(save_directory='.')
+tokenizer.save_vocabulary(save_directory='.')
 
-wordembs = model.get_input_embeddings()
+wordembs = model.model.get_input_embeddings()
 
 print("Vocab size")
 print(model.config.vocab_size)
@@ -97,10 +114,10 @@ for i, txt in enumerate(bart_words_to_plot):
     
 
 # Save the plot before adjusting.
-plt.savefig('viz-bart-voc-tsne10k-viz4k-noadj.pdf', format='pdf', bbox_inches="tight")
+plt.savefig(f'viz-bart-voc-tsne10k-viz4k-noadj-{tag}.pdf', format='pdf', bbox_inches="tight")
 print('now running adjust_text')
 # Using autoalign often works better in my experience, but it can be very slow for this case, so it's false by default below:
 #numiters = adjust_text(alltexts, autoalign=True, lim=50)
 numiters = adjust_text(alltexts, autoalign=False, lim=50)
 print('done adjust text, num iterations: ', numiters)
-plt.savefig('viz-bart-voc-tsne10k-viz4k-adj50.pdf', format='pdf', bbox_inches="tight")
+plt.savefig(f'viz-bart-voc-tsne10k-viz4k-adj50-{tag}.pdf', format='pdf', bbox_inches="tight")
