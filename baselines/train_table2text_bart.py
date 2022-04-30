@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 import sys
 from lightning_base import BaseTransformer, add_generic_args, generic_train, get_linear_schedule_with_warmup
 from callbacks import get_checkpoint_callback, get_early_stopping_callback
-from utils import convert_text, eval_bleu_sents, eval_sacre_bleu, eval_mover_score, eval_bleu
+from utils import convert_text, eval_acc, eval_bleu_sents, eval_sacre_bleu, eval_mover_score, eval_bleu
 from utils import Table2textBARTDataset as AgendaDataset
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
 class SummarizationTrainer(BaseTransformer):
 
     mode = "language-modeling"
-    val_metric = "avg_bleu"
+    val_metric = "avg_acc"
 
     def __init__(self, hparams):
         super().__init__(hparams, num_labels=None, mode=self.mode)
@@ -145,11 +145,12 @@ class SummarizationTrainer(BaseTransformer):
             bleu_info = eval_sacre_bleu(output_test_targets_file, output_test_predictions_file)
             #bleu_info = eval_bleu(output_test_targets_file, output_test_predictions_file)
             moverScore = eval_mover_score(output_test_targets_file, output_test_predictions_file)
-
+            acc = eval_acc(output_test_targets_file, output_test_predictions_file)
 
             logger.info("valid epoch: %s", self.count_valid_epoch)
             logger.info("%s bleu_info: %s", self.count_valid_epoch, bleu_info)
             logger.info("%s mover score: %s", self.count_valid_epoch, moverScore)
+            logger.info("%s accuracy: %s", self.count_valid_epoch, acc)
 
             output_test_metrics_file = os.path.join(self.hparams.output_dir, "test_metrics_" + self.hparams.test_type + "_" +
                                                                             str(self.count_valid_epoch) + ".txt")
@@ -185,6 +186,7 @@ class SummarizationTrainer(BaseTransformer):
             if self.count_valid_epoch >= 0:
                 bleu_info = eval_sacre_bleu(output_test_targets_file, output_test_predictions_file)
                 moverScore = eval_mover_score(output_test_targets_file, output_test_predictions_file)
+                acc = eval_acc(output_test_targets_file, output_test_predictions_file)
                 output_val_metrics_file = os.path.join(self.hparams.output_dir, "validation_metrics_" +
                     str(self.count_valid_epoch) + ".txt")
                 with open(output_val_metrics_file, "w") as writer:
@@ -195,6 +197,7 @@ class SummarizationTrainer(BaseTransformer):
                 moverScore = [0, 0]
 
             metrics = {}
+            metrics["{}_avg_acc".format(prefix)] = acc
             metrics["{}_avg_bleu".format(prefix)] = bleu_info
             metrics["{}_mover_mean1".format(prefix)] = moverScore[0]
             metrics["{}_mover_median1".format(prefix)] = moverScore[1]
@@ -204,6 +207,7 @@ class SummarizationTrainer(BaseTransformer):
             logger.info("valid epoch: %s", self.count_valid_epoch)
             logger.info("%s bleu_info: %s", self.count_valid_epoch, bleu_info)
             logger.info("%s mover score: %s", self.count_valid_epoch, moverScore)
+            logger.info("%s accuracy: %s", self.count_valid_epoch, acc)
 
             avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
 
