@@ -77,7 +77,7 @@ class SummarizationTrainer(BaseTransformer):
             input_ids=source_ids,
             attention_mask=source_mask,
             num_beams=5,
-            max_length=10,
+            max_length=15,
             length_penalty=5.0,
             early_stopping=True,
             use_cache=True,
@@ -110,7 +110,7 @@ class SummarizationTrainer(BaseTransformer):
             input_ids=source_ids,
             attention_mask=source_mask,
             num_beams=5,
-            max_length=10,
+            max_length=15,
             length_penalty=5.0,
             early_stopping=True,
             use_cache=True,
@@ -264,6 +264,7 @@ class SummarizationTrainer(BaseTransformer):
         return self.get_dataloader("dev", batch_size=self.hparams.eval_batch_size)
 
     def test_dataloader(self) -> DataLoader:
+        # return self.get_dataloader("dev", batch_size=self.hparams.eval_batch_size)
         return self.get_dataloader(f'test_{self.hparams.test_type}', batch_size=self.hparams.test_batch_size)
 
     @staticmethod
