@@ -21,6 +21,8 @@ dev_count = 0
 
 rules = ['largest', 'smallest', 'similar', 'diff']
 
+np.random.seed(0)
+
 
 def one_row_largest(datum):
     selected_row = np.random.choice(range(datum["num_rows"]))
@@ -141,7 +143,7 @@ def rows_comp(datum):
     ]
     datum["table_content_values"] = data
 
-    diff = np.round(np.abs(first-second))
+    diff = int(np.round(np.abs(first-second)))
     if first < second:
         datum["text"] = f"{second_rh} is around {diff} greater than {first_rh} given {col_name}"
     else:
@@ -166,10 +168,11 @@ def cols_comp(datum):
     ]
     datum["table_content_values"] = data
 
+    diff = int(np.round(np.abs(first-second)))
     if first < second:
-        datum["text"] = f"{second_ch} is greater than {first_ch} given {row_name}"
+        datum["text"] = f"{second_ch} is around {diff} greater than {first_ch} given {row_name}"
     else:
-        datum["text"] = f"{first_ch} is greater than {second_ch} given {row_name}"
+        datum["text"] = f"{first_ch} is around {diff} greater than {second_ch} given {row_name}"
 
     return datum
 
@@ -201,9 +204,9 @@ def create_datum(rule, dim):
         datum = rows_similar(datum)
     elif rule == "similar" and dim == "col":
         datum = cols_similar(datum)
-    elif rule == "comp" and dim == "row":
+    elif rule == "diff" and dim == "row":
         datum = rows_comp(datum)
-    elif rule == "comp" and dim == "col":
+    elif rule == "diff" and dim == "col":
         datum = cols_comp(datum)
 
     del datum["table_row_names"]
