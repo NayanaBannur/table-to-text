@@ -302,7 +302,8 @@ def generic_train(model: BaseTransformer, args: argparse.Namespace,
         callbacks=[LoggingCallback()],
         log_save_interval=1,
         num_sanity_val_steps=4,
-        reload_dataloaders_every_epoch=True
+        reload_dataloaders_every_epoch=True,
+        val_check_interval=0.1
     )
 
     if args.fp16:
