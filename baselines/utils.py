@@ -68,6 +68,21 @@ def eval_sacre_bleu(ref_file, pred_file):
     except:
         return 0
 
+def eval_acc(ref_file, pred_file):
+    try:
+        refs = get_lines(ref_file)
+        preds = get_lines(pred_file)
+        
+        acc = 0.0
+        total = float(len(refs))
+        
+        for i in range(len(refs)):
+            if refs[i].rstrip() == preds[i].rstrip():
+                acc += 1.0
+        return acc / total
+    except:
+        return 0
+
 def eval_bleu(ref_file, pred_file):
     refs = [get_lines(ref_file)]
     sys = get_lines(pred_file)
